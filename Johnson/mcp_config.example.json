@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "internal-faq-lan": {
+      "url": "http://<遠端機台區網IP>:8000/mcp"
+    }
+  }
+}
+

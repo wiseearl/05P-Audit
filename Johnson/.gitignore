@@ -1,0 +1,38 @@
+# Scoped to Johnson/ only (does not affect other folders in 05P-Audit)
+
+# Python cache & build artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# MCP self-update backups, temp files & agent backups
+*.bak
+*.tmp
+.agents/
+
+# Local secrets & private MCP config (keep *.example.* tracked)
+.env
+.env.*
+!.env.example
+mcp_config.json
+
+# Logs
+*.log
+logs/
+
+# OS & Editor files
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
