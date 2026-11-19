@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "grace-audit-db": {
+      "url": "http://<VM或主機IP>:8001/mcp"
+    }
+  }
+}

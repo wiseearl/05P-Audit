@@ -1,0 +1,127 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "企業內部稽核與費用報銷 API",
+    "version": "1.0.0",
+    "description": "企業內部稽核系統與員工報銷合規測試端點規格"
+  },
+  "paths": {
+    "/api/v1/audit/findings": {
+      "post": {
+        "summary": "建立新稽核缺失紀錄",
+        "description": "供稽核人員或自動化探針回報系統安全或合規缺失",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFindingRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "建立成功"
+          },
+          "400": {
+            "description": "參數不合規或格式錯誤"
+          }
+        }
+      }
+    },
+    "/api/v1/finance/reimbursement": {
+      "post": {
+        "summary": "提交員工費用報銷申請",
+        "description": "提交發票與報銷款項，系統進行合規檢查",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReimbursementRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "審核通過"
+          },
+          "422": {
+            "description": "金額或統編檢核不通過"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CreateFindingRequest": {
+        "type": "object",
+        "required": ["project_id", "severity", "title", "reporter_email"],
+        "properties": {
+          "project_id": {
+            "type": "string",
+            "example": "PRJ-2026-001",
+            "description": "所屬專案代碼"
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["Critical", "High", "Medium", "Low"],
+            "description": "嚴重等級"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 5,
+            "maxLength": 100,
+            "description": "缺失標題"
+          },
+          "reporter_email": {
+            "type": "string",
+            "format": "email",
+            "description": "稽核回報人員公務信箱"
+          },
+          "estimated_risk_score": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "預估風險分數 (1-100)"
+          }
+        }
+      },
+      "ReimbursementRequest": {
+        "type": "object",
+        "required": ["employee_id", "tax_id", "amount_twd", "invoice_no"],
+        "properties": {
+          "employee_id": {
+            "type": "string",
+            "example": "EMP-8821",
+            "description": "員工工號"
+          },
+          "tax_id": {
+            "type": "string",
+            "pattern": "^[0-9]{8}$",
+            "description": "統一編號 (8位數字)"
+          },
+          "amount_twd": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 500000,
+            "description": "申請報銷金額 (新台幣)"
+          },
+          "invoice_no": {
+            "type": "string",
+            "pattern": "^[A-Z]{2}-[0-9]{8}$",
+            "example": "AB-12345678",
+            "description": "發票號碼 (2碼大寫英文字母 + 8碼數字)"
+          },
+          "notes": {
+            "type": "string",
+            "description": "費用備註說明"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 320" width="100%" height="100%">
+    <!-- 背景卡片 -->
+    <rect width="520" height="320" rx="12" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5"/>
+    
+    <!-- 標題 -->
+    <text x="260" y="38" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="17" font-weight="bold" fill="#1e293b">
+        各風險等級缺失分佈
+    </text>
+    
+    <!-- 圓餅圖各扇區 -->
+    <g>
+        <path d="M 175 160 L 175.00 55.00 A 105 105 0 0 1 278.40 141.77 Z" fill="#d32f2f" stroke="#ffffff" stroke-width="2"/><path d="M 175 160 L 278.40 141.77 A 105 105 0 0 1 84.07 212.50 Z" fill="#f57c00" stroke="#ffffff" stroke-width="2"/><path d="M 175 160 L 84.07 212.50 A 105 105 0 0 1 71.60 141.77 Z" fill="#388e3c" stroke="#ffffff" stroke-width="2"/><path d="M 175 160 L 71.60 141.77 A 105 105 0 0 1 175.00 55.00 Z" fill="#fbc02d" stroke="#ffffff" stroke-width="2"/>
+    </g>
+
+    <!-- 中心裝飾白色小圓（呈現精緻甜甜圈環形圖質感） -->
+    <circle cx="175" cy="160" r="38" fill="#ffffff"/>
+    <text x="175" y="165" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="12" font-weight="600" fill="#64748b">
+        9 筆
+    </text>
+
+    <!-- 右側圖例 -->
+    <g>
+        <rect x="315" y="75" width="16" height="16" rx="3" fill="#d32f2f"/><text x="340" y="88" font-family="Segoe UI, sans-serif" font-size="13" fill="#333333">Critical: 2 (22.2%)</text><rect x="315" y="103" width="16" height="16" rx="3" fill="#f57c00"/><text x="340" y="116" font-family="Segoe UI, sans-serif" font-size="13" fill="#333333">High: 4 (44.4%)</text><rect x="315" y="131" width="16" height="16" rx="3" fill="#388e3c"/><text x="340" y="144" font-family="Segoe UI, sans-serif" font-size="13" fill="#333333">Low: 1 (11.1%)</text><rect x="315" y="159" width="16" height="16" rx="3" fill="#fbc02d"/><text x="340" y="172" font-family="Segoe UI, sans-serif" font-size="13" fill="#333333">Medium: 2 (22.2%)</text>
+    </g>
+</svg>
