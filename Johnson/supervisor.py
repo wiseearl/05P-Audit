@@ -16,6 +16,12 @@ import sys
 import time
 from pathlib import Path
 
+# 強制 stdout/stderr 使用 UTF-8 且遇無法編碼字元自動替換，徹底防止 Windows Service (cp950) 崩潰
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
 BASE_DIR = Path(__file__).parent.resolve()
 SERVER_PY = BASE_DIR / "server.py"
 BAK_PY = BASE_DIR / "server.py.bak"
@@ -30,16 +36,24 @@ def main() -> None:
     os.chdir(BASE_DIR)
     fail_count = 0
 
+    # 確保子程序皆採用 UTF-8 編碼
+    env = os.environ.copy()
+    env["PYTHONIOENCODING"] = "utf-8"
+    env["PYTHONUTF8"] = "1"
+
     print("=" * 65)
-    print("  🚀 MCP Server Supervisor 啟動中...")
-    print("  📌 支援：自動熱重啟、多語系 UTF-8、連線中斷防禦與自動災難還原")
+    print("  [BOOT] MCP Server Supervisor 啟動中...")
+    print("  [INFO] 支援：自動熱重啟、多語系 UTF-8、連線中斷防禦與自動災難還原")
     print("=" * 65, flush=True)
 
     while True:
         print(f"[{get_now()}] 正在啟動 MCP Server (server.py)...", flush=True)
         try:
-            # 啟動 server.py 並由 Python 守護進程接管
-            proc = subprocess.Popen([sys.executable, str(SERVER_PY)], cwd=str(BASE_DIR))
+            proc = subprocess.Popen(
+                [sys.executable, str(SERVER_PY)],
+                cwd=str(BASE_DIR),
+                env=env,
+            )
             exit_code = proc.wait()
         except KeyboardInterrupt:
             print(f"\n[{get_now()}] 收到手動中斷訊號 (Ctrl+C)，Supervisor 正常退出。", flush=True)
@@ -60,21 +74,21 @@ def main() -> None:
         # 異常退出 (Crash)
         fail_count += 1
         print(
-            f"[{get_now()}] [Supervisor] ⚠️ 偵測到異常崩潰！連續失敗次數: {fail_count}/{MAX_CONSECUTIVE_CRASHES}",
+            f"[{get_now()}] [Supervisor] [WARN] 偵測到異常崩潰！連續失敗次數: {fail_count}/{MAX_CONSECUTIVE_CRASHES}",
             flush=True,
         )
 
         if fail_count >= MAX_CONSECUTIVE_CRASHES:
-            print(f"[{get_now()}] [Supervisor] 🚨 警告：已連續崩潰 {MAX_CONSECUTIVE_CRASHES} 次，新程式碼可能存在致命錯誤！", flush=True)
+            print(f"[{get_now()}] [Supervisor] [ALERT] 警告：已連續崩潰 {MAX_CONSECUTIVE_CRASHES} 次，新程式碼可能存在致命錯誤！", flush=True)
             if BAK_PY.exists():
                 print(f"[{get_now()}] [Supervisor] 正在自動從 server.py.bak 執行災難復原...", flush=True)
                 shutil.copyfile(BAK_PY, SERVER_PY)
-                print(f"[{get_now()}] [Supervisor] ✅ 還原完成！重置計數並啟動穩定版本...", flush=True)
+                print(f"[{get_now()}] [Supervisor] [RECOVERED] 還原完成！重置計數並啟動穩定版本...", flush=True)
                 fail_count = 0
                 time.sleep(2)
                 continue
             else:
-                print(f"[{get_now()}] [Supervisor] ❌ 錯誤：找不到 server.py.bak，無法自動復原，請手動介入檢查！", flush=True)
+                print(f"[{get_now()}] [Supervisor] [ERROR] 錯誤：找不到 server.py.bak，無法自動復原，請手動介入檢查！", flush=True)
                 time.sleep(5)
                 sys.exit(1)
 
