@@ -1,4 +1,4 @@
-# Scoped to Johnson/ only (does not affect other folders in 05P-Audit)
+# Scoped to Johnson/ only (does not affect other folders in the repository)
 
 # Python cache & build artifacts
 __pycache__/
@@ -29,6 +29,9 @@ mcp_config.json
 # Logs
 *.log
 logs/
+
+# Third-party binaries (auto-downloaded from official site by install_service.bat)
+nssm/
 
 # OS & Editor files
 .DS_Store
