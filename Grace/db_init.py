@@ -79,6 +79,79 @@ def init_database(db_path: Path = DB_FILE, force_recreate: bool = False) -> None
     );
     """)
 
+    # 5. 跨系統來源：HR 員工名冊 (hr_employees)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS hr_employees (
+        emp_id TEXT PRIMARY KEY,
+        emp_name TEXT NOT NULL,
+        department TEXT NOT NULL,
+        email TEXT NOT NULL,
+        id_card TEXT NOT NULL,
+        bank_account TEXT NOT NULL,
+        phone TEXT NOT NULL,
+        status TEXT NOT NULL,       -- Active, Terminated, On_Leave
+        hire_date TEXT NOT NULL,
+        term_date TEXT
+    );
+    """)
+
+    # 6. 跨系統來源：ERP 供應商廠商名冊 (erp_vendors)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS erp_vendors (
+        vendor_id TEXT PRIMARY KEY,
+        vendor_name TEXT NOT NULL,
+        tax_id TEXT NOT NULL,
+        bank_account TEXT NOT NULL,
+        contact_person TEXT NOT NULL,
+        phone TEXT NOT NULL,
+        address TEXT NOT NULL,
+        status TEXT NOT NULL        -- Active, Suspended, Blacklisted
+    );
+    """)
+
+    # 7. 跨系統來源：採購訂單記錄 (procurement_orders)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS procurement_orders (
+        po_id TEXT PRIMARY KEY,
+        po_date TEXT NOT NULL,
+        vendor_id TEXT NOT NULL,
+        buyer_emp_id TEXT NOT NULL,
+        department TEXT NOT NULL,
+        amount_twd REAL NOT NULL,
+        item_description TEXT NOT NULL,
+        status TEXT NOT NULL,       -- Approved, Pending, Rejected
+        approver TEXT NOT NULL,
+        FOREIGN KEY (vendor_id) REFERENCES erp_vendors (vendor_id),
+        FOREIGN KEY (buyer_emp_id) REFERENCES hr_employees (emp_id)
+    );
+    """)
+
+    # 8. 跨系統來源：核心系統存取日誌 (system_access_logs)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS system_access_logs (
+        log_id TEXT PRIMARY KEY,
+        access_time TEXT NOT NULL,
+        emp_id TEXT NOT NULL,
+        action_type TEXT NOT NULL,  -- Login, Export_Data, Query_DB, Config_Change
+        source_ip TEXT NOT NULL,
+        system_name TEXT NOT NULL,  -- ERP-Finance, Core-Database, VPN-Gateway, Cloud-K8s
+        result TEXT NOT NULL        -- SUCCESS, FAILED
+    );
+    """)
+
+    # 9. 跨系統來源：員工費用報銷記錄 (expense_claims)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS expense_claims (
+        claim_id TEXT PRIMARY KEY,
+        claim_date TEXT NOT NULL,
+        emp_id TEXT NOT NULL,
+        invoice_no TEXT NOT NULL,
+        amount_twd REAL NOT NULL,
+        purpose TEXT NOT NULL,
+        status TEXT NOT NULL        -- Approved, Under_Review, Rejected
+    );
+    """)
+
     # 寫入擬真樣本資料 (Audit Projects)
     projects_data = [
         ("PRJ-2026-001", "2026 Q1 全集團核心系統資安健檢", "資訊科技處", "Grace Chen", "2026-01-10", "2026-02-15", "Medium", 84, "Completed"),
@@ -137,6 +210,66 @@ def init_database(db_path: Path = DB_FILE, force_recreate: bool = False) -> None
         "INSERT INTO remediation_records VALUES (?, ?, ?, ?, ?, ?)",
         remediation_data
     )
+
+    # 寫入 HR 員工資料 (hr_employees)
+    employees_data = [
+        ("EMP-101", "王大明", "資訊科技處", "daming.wang@corp.internal", "A123456789", "004-112233445566", "0910-111222", "Active", "2023-03-01", None),
+        ("EMP-102", "陳志遠", "採購管理處", "zhiyuan.chen@corp.internal", "B198765432", "012-345678901234", "0912-334455", "Active", "2022-07-15", None),
+        ("EMP-103", "林佩君", "電子商務部", "peijun.lin@corp.internal", "C223344556", "013-556677889900", "0921-667788", "Active", "2024-01-10", None),
+        ("EMP-104", "張健豪", "財務會計處", "jianhao.zhang@corp.internal", "D112233445", "007-998877665544", "0933-889900", "Terminated", "2021-05-20", "2026-03-31"),
+        ("EMP-105", "黃美玲", "資訊科技處", "meiling.huang@corp.internal", "E221144332", "017-334455667788", "0955-123456", "Active", "2023-11-01", None),
+        ("EMP-106", "李冠廷", "雲端維運部", "guanting.li@corp.internal", "F144556677", "008-778899001122", "0966-789012", "Active", "2024-06-01", None),
+        ("EMP-107", "許雅婷", "行銷業務部", "yating.xu@corp.internal", "G233445566", "021-445566778899", "0977-345678", "Active", "2025-02-15", None),
+        ("EMP-108", "周俊宏", "客戶服務部", "junhong.zhou@corp.internal", "H155667788", "050-123456789012", "0988-901234", "Terminated", "2022-09-01", "2026-06-15"),
+    ]
+    cursor.executemany("INSERT INTO hr_employees VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", employees_data)
+
+    # 寫入 ERP 供應商資料 (erp_vendors)
+    vendors_data = [
+        ("VND-001", "聯發資訊系統股份有限公司", "23456789", "004-987654321098", "高經理", "02-27001122", "台北市信義區信義路五段7號", "Active"),
+        ("VND-002", "宏遠數位行銷有限公司", "54321987", "012-345678901234", "陳志遠", "0912-334455", "新北市板橋區縣民大道二段", "Active"),  # 關係人舞弊 (與 EMP-102 相同帳號電話)
+        ("VND-003", "極速資訊器材企業社", "87654321", "013-112233445566", "張天明", "02-23456789", "台北市中正區重慶南路一段", "Active"),  # 拆單對象
+        ("VND-004", "敦南雲端整合服務", "98765432", "017-998877665544", "劉副總", "02-87654321", "台北市大安區敦化南路二段", "Active"),
+    ]
+    cursor.executemany("INSERT INTO erp_vendors VALUES (?, ?, ?, ?, ?, ?, ?, ?)", vendors_data)
+
+    # 寫入採購訂單資料 (procurement_orders)
+    orders_data = [
+        ("PO-2026-0115-01", "2026-01-15", "VND-001", "EMP-101", "資訊科技處", 350000.0, "企業級資料庫年度維護合約", "Approved", "資訊處長"),
+        ("PO-2026-0302-01", "2026-03-02", "VND-002", "EMP-102", "採購管理處", 88000.0, "新春社群宣傳廣告採購", "Approved", "採購處長"),
+        ("PO-2026-0520-01", "2026-05-20", "VND-004", "EMP-106", "雲端維運部", 120000.0, "Kubernetes 監控模組授權", "Approved", "技術長"),
+        # 拆單避審案例：2026-08-10 同一天連續開兩筆各約 9.8 萬採購單給 VND-003，規避 10 萬處長簽核門檻
+        ("PO-2026-0810-01", "2026-08-10", "VND-003", "EMP-105", "資訊科技處", 98500.0, "機房邊緣核心交換器模組 Part A", "Approved", "資訊組長"),
+        ("PO-2026-0810-02", "2026-08-10", "VND-003", "EMP-105", "資訊科技處", 99200.0, "機房邊緣核心交換器模組 Part B", "Approved", "資訊組長"),
+        ("PO-2026-0905-01", "2026-09-05", "VND-001", "EMP-101", "資訊科技處", 45000.0, "防火牆安全韌體升級服務", "Approved", "資訊組長"),
+    ]
+    cursor.executemany("INSERT INTO procurement_orders VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", orders_data)
+
+    # 寫入系統日誌資料 (system_access_logs)
+    logs_data = [
+        ("LOG-001", "2026-04-05 09:30:15", "EMP-101", "Login", "192.168.1.10", "Core-Database", "SUCCESS"),
+        ("LOG-002", "2026-04-05 10:15:20", "EMP-101", "Query_DB", "192.168.1.10", "Core-Database", "SUCCESS"),
+        ("LOG-003", "2026-04-08 14:20:00", "EMP-103", "Export_Data", "192.168.2.45", "ERP-Finance", "SUCCESS"),
+        # 幽靈帳號案例：EMP-104 於 2026-03-31 離職，卻在 4 月中旬從外網 IP 登入 ERP 導出總帳
+        ("LOG-004", "2026-04-12 22:15:00", "EMP-104", "Login", "114.34.88.19", "ERP-Finance", "SUCCESS"),
+        ("LOG-005", "2026-04-12 22:20:10", "EMP-104", "Export_Data", "114.34.88.19", "ERP-Finance", "SUCCESS"),
+        ("LOG-006", "2026-04-15 03:10:00", "EMP-104", "Login", "114.34.88.19", "Core-Database", "SUCCESS"),
+        # 幽靈帳號案例 2：EMP-108 於 2026-06-15 離職，6-25 仍有 VPN 連線紀錄
+        ("LOG-007", "2026-06-25 11:05:00", "EMP-108", "Login", "211.75.12.33", "VPN-Gateway", "SUCCESS"),
+        ("LOG-008", "2026-07-01 09:00:00", "EMP-105", "Login", "192.168.1.88", "Cloud-K8s", "SUCCESS"),
+    ]
+    cursor.executemany("INSERT INTO system_access_logs VALUES (?, ?, ?, ?, ?, ?, ?)", logs_data)
+
+    # 寫入費用報銷資料 (expense_claims)
+    claims_data = [
+        ("CLM-001", "2026-03-10", "EMP-101", "TX-11223344", 2500.0, "資訊部專案加班餐費", "Approved"),
+        ("CLM-002", "2026-04-15", "EMP-102", "TY-55667788", 8400.0, "採購外賓商務餐敘", "Approved"),
+        # 重複報銷案例：發票號碼 AB-88776655 被 EMP-103 與 EMP-107 分別報銷了兩次！
+        ("CLM-003", "2026-05-02", "EMP-103", "AB-88776655", 4800.0, "跨部門業務交流研討會餐費", "Approved"),
+        ("CLM-004", "2026-05-18", "EMP-107", "AB-88776655", 4800.0, "行銷部廠商拜訪差旅餐費", "Approved"),
+        ("CLM-005", "2026-06-01", "EMP-106", "TZ-99001122", 12000.0, "雲端研討會報名費", "Approved"),
+    ]
+    cursor.executemany("INSERT INTO expense_claims VALUES (?, ?, ?, ?, ?, ?, ?)", claims_data)
 
     conn.commit()
     conn.close()

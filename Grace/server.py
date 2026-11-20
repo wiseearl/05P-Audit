@@ -22,6 +22,8 @@ from typing import Any
 from mcp.server.mcpserver import MCPServer
 from db_init import DB_FILE, init_database
 import api_tester
+import working_paper_generator
+import fraud_detector
 
 HOST = os.getenv("MCP_HOST", "0.0.0.0")
 PORT = int(os.getenv("MCP_PORT", "8001"))
@@ -32,9 +34,13 @@ init_database()
 mcp = MCPServer(
     name="grace-audit-suite-mcp",
     instructions=(
-        "這是一個企業級稽核數據分析（Audit Analytics）與 API 契約品質檢驗（API Contract Testing）的 MCP 伺服器。"
-        "提供安全唯讀 SQL 查詢、資料剖析、Mermaid/SVG 視覺化圖表生成，"
-        "以及 OpenAPI 規格解析、智慧 mock 測資生成與合規契約驗證功能。"
+        "這是一個企業級稽核數據分析（Audit Analytics）、API 契約品質檢驗、"
+        "審計工作底稿自動生成（Working Paper Generator）與跨系統舞弊偵測（Fraud Detection）的 MCP 伺服器。"
+        "提供安全唯讀 SQL 查詢、資料剖析、Mermaid/SVG 視覺化圖表生成、"
+        "OpenAPI 規格解析、智慧 mock 測資生成、一鍵產出標準審計工作底稿（Markdown 與 Word docx 格式），"
+        "以及跨系統資料比對（HR vs ERP 關係人、採購拆單、離職幽靈帳號、重複報銷）。\n\n"
+        "【前端圖表渲染限制】：Antigravity 介面不支援 Mermaid 'pie' 語法（輸出 ```mermaid pie 會導致 Invalid mermaid header 錯誤崩潰）。"
+        "若需視覺化圓餅圖或分佈，請一律使用工具回傳之 image_markdown（QuickChart 圖片）或使用 xychart-beta 長條圖 / flowchart LR 呈現，嚴禁輸出 ```mermaid pie 語法。"
     ),
 )
 
@@ -611,7 +617,52 @@ def validate_api_contract(schema_name: str, payload: dict[str, Any], spec_path: 
 
 
 # =====================================================================
-# 5. 主程式啟動入口
+# 5. 稽核工作底稿與正式報告自動生成工具
+# =====================================================================
+
+@mcp.tool()
+def generate_audit_working_paper(project_id: str, output_format: str = "both") -> dict[str, Any]:
+    """為指定稽核專案自動生成符合 IIA 標準的正式「內部稽核工作底稿 (Audit Working Paper)」。
+    
+    支援格式：
+    - 'markdown'：輸出標準 Markdown 底稿 (.md)
+    - 'docx'：輸出具備表格著色、風險等級標示與簽核欄的 Microsoft Word 底稿 (.docx)
+    - 'both'：同時產出兩種格式
+
+    Args:
+        project_id: 專案代碼（例如：'PRJ-2026-005', 'PRJ-2026-001', 'PRJ-2026-002', 'PRJ-2026-003'）。
+        output_format: 匯出格式，支援 'markdown', 'docx', 或 'both'。
+    """
+    return working_paper_generator.generate_working_paper(project_id, output_format)
+
+
+# =====================================================================
+# 6. 跨系統交叉比對與舞弊偵測工具 (Cross-System Fraud Detection)
+# =====================================================================
+
+@mcp.tool()
+def run_fraud_detection(rule_filter: str = "all") -> dict[str, Any]:
+    """執行全量「跨系統交叉比對與舞弊偵測 (Cross-System Fraud Detection)」。
+    
+    結合多個業務維度進行全量碰撞分析，精準找出潛在舞弊紅旗（Red Flags）：
+    1. 利益衝突與關係人舞弊 (Conflict of Interest)：比對 HR 員工與 ERP 供應商之帳戶、電話或代表人。
+    2. 採購拆單規避核決門檻 (Split Purchase Orders)：比對同日同採購人對同一供應商拆分低於 10 萬門檻之訂單。
+    3. 幽靈帳號與離職異常存取 (Zombie Accounts)：比對 HR 離職生效日與核心系統/ERP/VPN 之後續存取與資料匯出。
+    4. 假發票與重複報銷 (Duplicate Invoices)：偵測同一發票號碼被不同員工重複請款。
+
+    【視覺化圖表輸出限制】：
+    Antigravity 前端不支援 Mermaid 'pie' 語法（輸出 ```mermaid pie 會導致 Invalid mermaid header 錯誤崩潰）。
+    若需視覺化呈現嚴重度分佈，請一律使用回傳之 visual_charts.image_markdown (QuickChart 圓餅圖圖片)
+    或 visual_charts.xychart_mermaid (長條圖)，嚴禁自行輸出 ```mermaid pie 語法。
+
+    Args:
+        rule_filter: 執行規則過濾，支援 'all'（全量比對）、'conflict_of_interest'、'split_po'、'zombie_account'、'duplicate_invoice'。
+    """
+    return fraud_detector.run_cross_system_fraud_audit(rule_filter=rule_filter)
+
+
+# =====================================================================
+# 7. 主程式啟動入口
 # =====================================================================
 
 if __name__ == "__main__":
@@ -620,7 +671,7 @@ if __name__ == "__main__":
 
     lan_ip = _get_lan_ip()
     print("=" * 65)
-    print(f"🚀 啟動 Grace 稽核與 API 品質檢驗 MCP 伺服器 (grace-audit-suite-mcp)")
+    print(f"🚀 啟動 Grace 稽核全功能 MCP 伺服器 (grace-audit-suite-mcp)")
     print(f"📡 本機/區網 Streamable HTTP 端點: http://{lan_ip}:{PORT}/mcp")
     print(f"📂 資料庫檔案: {DB_FILE}")
     print(f"🛠️  支援工具: [DB] get_db_overview, get_table_schema, safe_sql_query,")
@@ -628,6 +679,8 @@ if __name__ == "__main__":
     print(f"              reset_sample_database")
     print(f"              [API] get_api_spec_endpoints, generate_smart_mock_data,")
     print(f"              validate_api_contract")
+    print(f"              [DOC] generate_audit_working_paper (Markdown & Word)")
+    print(f"              [FRAUD] run_fraud_detection (跨系統舞弊偵測)")
     print("=" * 65)
 
     # 允許跨網段與 VM IP 存取

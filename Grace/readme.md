@@ -37,10 +37,15 @@
 | `audit_findings` | `id, project_id, category, severity, title, description, status, finding_date, remediation_due` | 稽核發現的缺失（包含資安防護、存取控制、隱私合規等） |
 | `department_metrics` | `dept_id, dept_name, branch, staff_count, passing_rate, critical_issues, audit_quarter` | 各部門每季合規通過率與重大缺失數 |
 | `remediation_records` | `id, finding_id, action_taken, verified_by, completed_date, cost_twd` | 缺失改善方案、複查人員與改善成本 (TWD) |
+| `hr_employees` | `emp_id, emp_name, department, email, id_card, bank_account, phone, status, hire_date, term_date` | **HR 人資員工主檔**（工號、姓名、銀行帳戶、電話、在職狀態、離職生效日） |
+| `erp_vendors` | `vendor_id, vendor_name, tax_id, bank_account, contact_person, phone, address, status` | **ERP 供應商廠商主檔**（統編、銀行帳戶、聯絡人、電話、公司登記地址） |
+| `procurement_orders` | `po_id, po_date, vendor_id, buyer_emp_id, department, amount_twd, item_description, status, approver` | **採購訂單記錄**（訂單編號、日期、金額、品項規格、承辦人、核決層級主管） |
+| `system_access_logs` | `log_id, access_time, emp_id, action_type, source_ip, system_name, result` | **核心系統存取軌跡**（日誌 ID、時間戳記、存取系統、外部/內部 IP、匯出資料行為） |
+| `expense_claims` | `claim_id, claim_date, emp_id, invoice_no, amount_twd, purpose, status` | **費用報銷單明細**（請款單號、請款人、統一發票字軌號碼、金額、報銷用途） |
 
 ---
 
-## 🛠️ 現有 MCP 工具清單 (共 10 個)
+## 🛠️ 現有 MCP 工具清單 (共 12 個)
 
 ### 4.1 資料庫分析與視覺化工具 (方案 B)
 | 工具名稱 | 參數 | 功能說明 |
@@ -59,6 +64,16 @@
 | `get_api_spec_endpoints` | `spec_path=""` | 自動解析 OpenAPI / Swagger 規格檔，列出所有 API 路徑、HTTP 方法與 Request Schema。 |
 | `generate_smart_mock_data` | `schema_name`, `scenario="normal"` | **智慧測資生成器**：支援 `normal` (正常)、`boundary` (邊界極限值) 與 `malicious` (惡意/注入/格式錯誤) 三種情境。 |
 | `validate_api_contract` | `schema_name`, `payload` | **契約合規檢查員**：自動比對資料是否符合 OpenAPI 規範（檢查必填欄位、型態、min/max、enum、正則 pattern）。 |
+
+### 4.3 審計工作底稿與正式報告自動生成工具
+| 工具名稱 | 參數 | 功能說明 |
+| :--- | :--- | :--- |
+| `generate_audit_working_paper` | `project_id`, `output_format="both"` | **一鍵產出正式工作底稿**：自動抓取專案與缺失資料，輸出符合國際稽核標準之 Markdown (`.md`) 與排版精美的 Microsoft Word (`.docx`) 底稿！ |
+
+### 4.4 全量跨系統交叉比對與舞弊偵測工具 (Cross-System Fraud Detection)
+| 工具名稱 | 參數 | 功能說明 |
+| :--- | :--- | :--- |
+| `run_fraud_detection` | `rule_filter="all"` | **全量跨系統碰撞分析**：比對 HR、ERP 供應商、採購訂單、存取日誌與費用報銷，自動偵測利益衝突、化整為零拆單、離職幽靈帳號與重複報銷發票，產出具備稽核改善建議與證據鏈之完整分析報告。 |
 
 ---
 
@@ -123,12 +138,30 @@ python server.py
 ### 測試 5：智慧測資生成與合規防禦檢驗 (方案 C)
 > 「請針對報銷申請 API（ReimbursementRequest）生成一組 malicious 惡意測資，並使用契約驗證工具檢查該測資違背了哪些規範。」
 
+### 測試 6：一鍵自動生成標準稽核工作底稿 (Word & Markdown)
+> 「請幫我產出專案『PRJ-2026-005』（雲端維運部 Kubernetes 安全審計）的正式審計工作底稿，包含 Markdown 與 Word 格式。」
+
+### 測試 7：全量「跨系統交叉比對」與舞弊偵測 (全方位內控防禦)
+> 「請幫我執行全量『跨系統交叉比對與舞弊偵測』，分析是否有利益衝突、採購拆單、離職帳號存取或重複報銷等舞弊紅旗，並整理出高風險異常清單與具體事證。（注意：如需視覺化，請以長條圖 xychart-beta 或流程圖 flowchart LR 呈現分佈，請勿使用未支援的 Mermaid pie 語法）」
+
 ---
 
 ### 3 分鐘 Demo 簡報講稿範例：
-1. **開場痛點（30秒）**：「過去長官要看合規與稽核數據，需要請工程師下 SQL 或手動拉 Excel 製圖，耗時且無法即時互動。」
-2. **MCP 架構介紹（30秒）**：「我開發了一套跨機遠端的 Audit Analytics MCP Server，部署在 VM 上，對接稽核資料庫並設有完整的 SQL 唯讀防護。」
+1. **開場痛點（30秒）**：「過去長官要看合規與稽核數據，需要請工程師下 SQL 或手動拉 Excel 製圖；而舞弊調查更需要跨 HR、ERP、簽核系統人工肉眼對帳，費時數週且易有疏漏。」
+2. **MCP 全功能架構（30秒）**：「Grace 的 MCP 伺服器整合了『數據探測與圖表 (方案 B)』、『API 契約品質檢驗 (方案 C)』、『標準工作底稿生成』以及『全量跨系統舞弊碰撞分析』，一站式支援審計全流程。」
 3. **現場展示（90秒）**：
-   - 輸入自然語言提問 ➔ Antigravity 自動查 Schema ➔ 自動生成 SQL 取得資料。
-   - 呼叫圖表工具 ➔ 當場在介面呈現出美麗的 Mermaid 視覺化圖表與結論。
-4. **效益總結（30秒）**：「這套結合證實了 Antigravity 搭配 MCP，不僅能做純程式開發，還能直接升級成企業專屬的商業與資安決策助手！」
+   - 自然語言對話查庫與 Mermaid/SVG 圖表動態繪製。
+   - 快速驗證 API 規格與智慧邊界測資防禦。
+   - 一鍵秒級導出主管最愛的 IIA 標準 Word 審計工作底稿。
+   - 執行全量舞弊比對，幾秒內即刻抓出利益衝突員工、同日拆單避審、離職員工登入與假發票重複請款！
+4. **效益總結（30秒）**：「這套結合證實了 Antigravity 搭配 MCP，不僅能做純程式開發，還能直接升級成企業專屬的商業、風控與資安決策助手！」
+
+---
+
+## ❓ 常見問題與排錯指南 (Troubleshooting)
+
+### Q: 為什麼前端畫面偶爾會跳出 `⚠️ Failed to render Mermaid diagram: Invalid mermaid header: "pie title ..."`？
+- **原因**：Antigravity 內建的 Markdown 引擎僅支援 `flowchart / graph`, `stateDiagram-v2`, `sequenceDiagram`, `classDiagram`, `erDiagram`, `xychart-beta`，**尚未支援** Mermaid 原生的 `pie` 圓餅圖語法。當 AI 模型主動想用 Mermaid 畫圓餅圖時便會報錯。
+- **解法**：
+  1. **提問約束**：提問時加上「若需圖表請使用長條圖或表格，避免使用 Mermaid pie」。
+  2. **正宗圓餅圖**：請呼叫 `export_svg_pie_chart` 輸出向量 SVG 檔，或調用 `generate_mermaid_chart(chart_type='pie', ...)` 取得 QuickChart 圖片 Markdown。
